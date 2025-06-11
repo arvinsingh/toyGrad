@@ -14,7 +14,7 @@ class Special():
         self._backward = lambda: None
 
     def __repr__(self):
-        return f'Special(data={self.data}, requires_grad={self.requires_grad})'
+        return f'Special(data={self.data}, grad={self.grad})'
 
     def __add__(self, other):
         other = other if isinstance(other, Special) else Special(other)
@@ -87,14 +87,15 @@ class Special():
         out = Special(math.log(self.data + eps), (self,), 'log', self.requires_grad)
 
         def _backward():
-            self.grad += (1 / (self.data + eps)) * out.grad
+            if self.requires_grad:
+                self.grad += (1 / (self.data + eps)) * out.grad
 
         out._backward = _backward
         return out
 
     def tanh(self):
         t = math.tanh(self.data)
-        out = Special(t, (self,), 'tanh')
+        out = Special(t, (self,), 'tanh', self.requires_grad)
 
         def _backward():
             if self.requires_grad:
@@ -116,7 +117,7 @@ class Special():
 
     def sigmoid(self):
         sig = 1 / (1 + math.exp(-self.data))
-        out = Special(sig, (self,), 'sigmoid')
+        out = Special(sig, (self,), 'sigmoid', self.requires_grad)
 
         def _backward():
             if self.requires_grad:
@@ -147,8 +148,8 @@ class Special():
 
 
 class Param(Special):
-    def __init__(self, value):
-        super().__init(value)
+    def __init__(self, scalar):
+        super().__init__(scalar)
         self.requires_grad = True
 
     def __repr__(self):
@@ -156,8 +157,8 @@ class Param(Special):
 
 
 class SpecialTensor:
-    def __init__(self, values, _prev=None, _op='', requires_grad=False):
-        self.data = np.array(values, dtype=float)
+    def __init__(self, tensor, _prev=None, _op='', requires_grad=False):
+        self.tensor = np.array(tensor, dtype=float)
         self.grad = np.zeros_like(self.data)
         self._prev = _prev if _prev is not None else set()
         self._op = _op
@@ -295,3 +296,10 @@ class SpecialTensor:
             nodes._backward()
 
 
+class Parameter(SpecialTensor):
+    def __init__(self, tensor):
+        super().__init__(tensor)
+        self.requires_grad = True # = SpecialTensor(tensor, requires_grad=True)
+    
+    def __repr__(self):
+        return f"Parameter({self})"
