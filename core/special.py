@@ -147,7 +147,7 @@ class Special():
             nodes._backward()
 
 
-class Param(Special):
+class SScalar(Special):
     def __init__(self, scalar):
         super().__init__(scalar)
         self.requires_grad = True
@@ -296,10 +296,11 @@ class SpecialTensor:
             nodes._backward()
 
 
-class Parameter(SpecialTensor):
+class STensor(SpecialTensor):
     def __init__(self, tensor):
         super().__init__(tensor)
         self.requires_grad = True # = SpecialTensor(tensor, requires_grad=True)
     
     def __repr__(self):
         return f"Parameter({self})"
+
